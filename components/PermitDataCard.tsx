@@ -9,7 +9,7 @@ interface PermitDataCardProps {
   onPress?: () => void;
 }
 
-const PermitDataCard: React.FC<PermitDataCardProps> = ({ permit, onPress }) => {
+export default function PermitDataCard({ permit, onPress }: PermitDataCardProps) {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'approved':
@@ -93,7 +93,7 @@ const PermitDataCard: React.FC<PermitDataCardProps> = ({ permit, onPress }) => {
       </View>
     </TouchableOpacity>
   );
-};
+}
 
 const styles = StyleSheet.create({
   card: {

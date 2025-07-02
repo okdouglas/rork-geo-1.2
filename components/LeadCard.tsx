@@ -11,7 +11,7 @@ interface LeadCardProps {
   canSync: boolean;
 }
 
-const LeadCard: React.FC<LeadCardProps> = ({ lead, onSync, syncIcon, canSync }) => {
+export default function LeadCard({ lead, onSync, syncIcon, canSync }: LeadCardProps) {
   const handleWebsitePress = () => {
     if (lead.website) {
       Linking.openURL(lead.website);
@@ -104,7 +104,7 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, onSync, syncIcon, canSync }) 
       </View>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   card: {
