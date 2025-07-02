@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Switch, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Zap, ListChecks, Target, FileText, RefreshCw } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
@@ -106,15 +106,13 @@ export default function WorkflowDetailsScreen() {
           <FileText size={18} color={colors.text} />
           <Text style={styles.sectionTitle}>Related Permit Data</Text>
           <View style={styles.headerActions}>
-            {loadingPermits ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <RefreshCw 
-                size={16} 
-                color={colors.primary} 
-                onPress={handleRefreshPermits}
-              />
-            )}
+            <TouchableOpacity onPress={handleRefreshPermits} disabled={loadingPermits}>
+              {loadingPermits ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <RefreshCw size={16} color={colors.primary} />
+              )}
+            </TouchableOpacity>
           </View>
         </View>
 

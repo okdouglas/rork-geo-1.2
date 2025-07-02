@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { FileText, MapPin, Calendar, Building, Layers, ExternalLink } from 'lucide-react-native';
+import { FileText, MapPin, Calendar, Building, Layers } from 'lucide-react-native';
 import { PermitData } from '@/types/lead';
 import { colors } from '@/constants/colors';
 
@@ -9,7 +9,7 @@ interface PermitDataCardProps {
   onPress?: () => void;
 }
 
-export default function PermitDataCard({ permit, onPress }: PermitDataCardProps) {
+const PermitDataCard: React.FC<PermitDataCardProps> = ({ permit, onPress }) => {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'approved':
@@ -82,7 +82,7 @@ export default function PermitDataCard({ permit, onPress }: PermitDataCardProps)
           
           {permit.depth && (
             <View style={styles.detailItem}>
-              <Text style={styles.depthText}>{permit.depth.toLocaleString()}' TD</Text>
+              <Text style={styles.depthText}>{permit.depth.toLocaleString()}ft TD</Text>
             </View>
           )}
         </View>
@@ -93,7 +93,7 @@ export default function PermitDataCard({ permit, onPress }: PermitDataCardProps)
       </View>
     </TouchableOpacity>
   );
-}
+};
 
 const styles = StyleSheet.create({
   card: {
@@ -172,3 +172,5 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 });
+
+export default PermitDataCard;

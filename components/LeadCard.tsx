@@ -11,7 +11,7 @@ interface LeadCardProps {
   canSync: boolean;
 }
 
-export default function LeadCard({ lead, onSync, syncIcon, canSync }: LeadCardProps) {
+const LeadCard: React.FC<LeadCardProps> = ({ lead, onSync, syncIcon, canSync }) => {
   const handleWebsitePress = () => {
     if (lead.website) {
       Linking.openURL(lead.website);
@@ -66,7 +66,7 @@ export default function LeadCard({ lead, onSync, syncIcon, canSync }: LeadCardPr
           <Text style={styles.contactTitle}>Key Contact:</Text>
           <View style={styles.contactInfo}>
             <Text style={styles.contactName}>{lead.contact.name}</Text>
-            <Text style={styles.contactTitle}>{lead.contact.title}</Text>
+            <Text style={styles.contactRole}>{lead.contact.title}</Text>
             {lead.contact.email && (
               <TouchableOpacity onPress={handleContactEmail} style={styles.contactAction}>
                 <Mail size={14} color={colors.primary} />
@@ -104,7 +104,7 @@ export default function LeadCard({ lead, onSync, syncIcon, canSync }: LeadCardPr
       </View>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   card: {
@@ -174,6 +174,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.text,
   },
+  contactRole: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
   contactAction: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -214,3 +218,5 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
+
+export default LeadCard;
