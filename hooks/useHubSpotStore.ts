@@ -5,6 +5,7 @@ import { hubspotService, HubSpotConfig } from '@/services/hubspot';
 import { Company } from '@/types';
 import { Contact } from '@/types';
 import { Permit } from '@/types';
+import { Lead } from '@/types/lead';
 
 interface HubSpotSyncStatus {
   isConfigured: boolean;
@@ -21,6 +22,7 @@ interface HubSpotStore {
   testConnection: () => Promise<boolean>;
   syncCompany: (companyId: string) => Promise<boolean>;
   syncContact: (contactId: string) => Promise<boolean>;
+  syncLeadToHubSpot: (leadId: string) => Promise<boolean>;
   syncAllCompanies: () => Promise<void>;
   syncAllContacts: () => Promise<void>;
   createDealFromPermit: (permitId: string) => Promise<boolean>;
@@ -180,6 +182,88 @@ export const useHubSpotStore = create<HubSpotStore>()(
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
           addSyncError(`Failed to sync contact: ${errorMessage}`);
+          return false;
+        }
+      },
+
+      syncLeadToHubSpot: async (leadId) => {
+        const { addSyncError } = get();
+        
+        try {
+          // Get lead data from store
+          const { useLeadSourcingStore } = await import('@/hooks/useLeadSourcingStore');
+          const leadStore = useLeadSourcingStore.getState();
+          const lead = leadStore.leads.find((l: Lead) => l.id === leadId);
+          
+          if (!lead) {
+            addSyncError(`Lead ${leadId} not found`);
+            return false;
+          }
+
+          // Check if company already exists in HubSpot
+          const existingCompany = await hubspotService.searchCompanyByName(lead.companyName);
+          
+          let companyId: string;
+          
+          if (existingCompany.results && existingCompany.results.length > 0) {
+            companyId = existingCompany.results[0].id;
+            
+            // Update existing company with new data
+            const updateData = {
+              industry: lead.industry,
+              state: lead.location,
+              domain: lead.website,
+              numberofemployees: lead.size,
+              hs_lead_status: 'NEW',
+            };
+            
+            await hubspotService.updateCompany(companyId, updateData);
+          } else {
+            // Create new company
+            const companyData = {
+              name: lead.companyName,
+              industry: lead.industry,
+              state: lead.location,
+              domain: lead.website,
+              numberofemployees: lead.size,
+            };
+            
+            const newCompany = await hubspotService.createCompany(companyData);
+            companyId = newCompany.id;
+          }
+
+          // Create contact if available
+          if (lead.contact && lead.contact.email) {
+            const existingContact = await hubspotService.searchContactByEmail(lead.contact.email);
+            
+            if (!existingContact.results || existingContact.results.length === 0) {
+              const nameParts = lead.contact.name.split(' ');
+              const firstname = nameParts[0] || '';
+              const lastname = nameParts.slice(1).join(' ') || '';
+              
+              const contactData = {
+                email: lead.contact.email,
+                firstname: firstname,
+                lastname: lastname,
+                jobtitle: lead.contact.title,
+                company: lead.companyName,
+                hs_lead_status: 'NEW',
+              };
+              
+              const newContact = await hubspotService.createContact(contactData);
+              
+              // Associate contact with company
+              await hubspotService.associateContactWithCompany(newContact.id, companyId);
+            }
+          }
+
+          // Mark lead as synced
+          leadStore.markAsSynced(leadId, companyId);
+
+          return true;
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+          addSyncError(`Failed to sync lead: ${errorMessage}`);
           return false;
         }
       },

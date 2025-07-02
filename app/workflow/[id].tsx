@@ -1,29 +1,69 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Switch, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { Zap, ListChecks, Target } from 'lucide-react-native';
+import { Zap, ListChecks, Target, FileText, RefreshCw } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { useWorkflowStore } from '@/hooks/useWorkflowStore';
 import { useTemplateStore } from '@/hooks/useTemplateStore';
+import { fetchPermitData } from '@/lib/permits';
+import { PermitData } from '@/types/lead';
 import WorkflowStep from '@/components/WorkflowStep';
 import TemplatePreview from '@/components/TemplatePreview';
+import PermitDataCard from '@/components/PermitDataCard';
 
 export default function WorkflowDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { workflows, selectedWorkflow, setSelectedWorkflow, updateWorkflowStep, toggleWorkflowActive } = useWorkflowStore();
   const { templates } = useTemplateStore();
   
+  const [permits, setPermits] = useState<PermitData[]>([]);
+  const [loadingPermits, setLoadingPermits] = useState(false);
+  const [permitError, setPermitError] = useState<string | null>(null);
+
   // Find the workflow and set it as selected
-  React.useEffect(() => {
+  useEffect(() => {
     const workflow = workflows.find(w => w.id === id);
     if (workflow) {
       setSelectedWorkflow(workflow);
+      // Automatically fetch permit data when workflow is loaded
+      fetchWorkflowPermits(workflow.id);
     }
     
     return () => {
       setSelectedWorkflow(null);
     };
   }, [id, workflows, setSelectedWorkflow]);
+
+  const fetchWorkflowPermits = async (workflowId: string) => {
+    setLoadingPermits(true);
+    setPermitError(null);
+    
+    try {
+      // Fetch permits based on workflow targeting criteria
+      const permitData = await fetchPermitData({
+        workflowId,
+        // Add date range for recent permits (last 30 days)
+        dateRange: {
+          start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          end: new Date().toISOString().split('T')[0]
+        }
+      });
+      
+      setPermits(permitData);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch permit data';
+      setPermitError(errorMessage);
+      console.error('Error fetching permits:', error);
+    } finally {
+      setLoadingPermits(false);
+    }
+  };
+
+  const handleRefreshPermits = () => {
+    if (selectedWorkflow) {
+      fetchWorkflowPermits(selectedWorkflow.id);
+    }
+  };
   
   if (!selectedWorkflow) {
     return (
@@ -58,6 +98,53 @@ export default function WorkflowDetailsScreen() {
           <Zap size={16} color={colors.textSecondary} />
           <Text style={styles.triggerText}>{selectedWorkflow.trigger}</Text>
         </View>
+      </View>
+
+      {/* Permit Data Section */}
+      <View style={styles.permitsCard}>
+        <View style={styles.sectionHeader}>
+          <FileText size={18} color={colors.text} />
+          <Text style={styles.sectionTitle}>Related Permit Data</Text>
+          <View style={styles.headerActions}>
+            {loadingPermits ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <RefreshCw 
+                size={16} 
+                color={colors.primary} 
+                onPress={handleRefreshPermits}
+              />
+            )}
+          </View>
+        </View>
+
+        {permitError && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{permitError}</Text>
+          </View>
+        )}
+
+        {permits.length > 0 ? (
+          <View style={styles.permitsContainer}>
+            <Text style={styles.permitsCount}>
+              {permits.length} recent permits found matching workflow criteria
+            </Text>
+            {permits.slice(0, 3).map(permit => (
+              <PermitDataCard key={permit.id} permit={permit} />
+            ))}
+            {permits.length > 3 && (
+              <Text style={styles.morePermitsText}>
+                +{permits.length - 3} more permits available
+              </Text>
+            )}
+          </View>
+        ) : !loadingPermits && !permitError ? (
+          <View style={styles.emptyPermitsContainer}>
+            <Text style={styles.emptyPermitsText}>
+              No recent permits found for this workflow
+            </Text>
+          </View>
+        ) : null}
       </View>
       
       <View style={styles.targetingCard}>
@@ -169,6 +256,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
   },
+  permitsCard: {
+    backgroundColor: 'white',
+    marginTop: 12,
+    padding: 16,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: colors.border,
+  },
   targetingCard: {
     backgroundColor: 'white',
     marginTop: 12,
@@ -188,6 +283,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginBottom: 16,
+  },
+  headerActions: {
+    marginLeft: 'auto',
+  },
+  errorContainer: {
+    backgroundColor: 'rgba(234, 67, 53, 0.1)',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: colors.danger,
+    fontSize: 14,
+  },
+  permitsContainer: {
+    gap: 8,
+  },
+  permitsCount: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 12,
+  },
+  morePermitsText: {
+    fontSize: 14,
+    color: colors.primary,
+    textAlign: 'center',
+    marginTop: 8,
+    fontWeight: '500',
+  },
+  emptyPermitsContainer: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyPermitsText: {
+    color: colors.textSecondary,
+    fontSize: 14,
   },
   targetSection: {
     marginBottom: 16,

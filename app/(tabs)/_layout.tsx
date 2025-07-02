@@ -1,7 +1,7 @@
 import React from "react";
 import { Tabs } from "expo-router";
 import { colors } from "@/constants/colors";
-import { Home, Building, FileText, ListChecks, BarChart, Settings } from "lucide-react-native";
+import { Home, Building, FileText, ListChecks, BarChart, Settings, Search } from "lucide-react-native";
 
 export default function TabLayout() {
   return (
@@ -52,6 +52,13 @@ export default function TabLayout() {
         options={{
           title: "Workflows",
           tabBarIcon: ({ color }) => <ListChecks size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="lead-sourcing"
+        options={{
+          title: "Lead Sourcing",
+          tabBarIcon: ({ color }) => <Search size={22} color={color} />,
         }}
       />
       <Tabs.Screen
